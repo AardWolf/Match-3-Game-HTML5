@@ -36,7 +36,7 @@ window.onload = function() {
     // Level object
     var level = {
         x: 250,         // X position
-        y: 113,         // Y position
+        y: 83,         // Y position
         columns: 8,     // Number of tile columns
         rows: 8,        // Number of tile rows
         tilewidth: 40,  // Visual width of a tile
@@ -83,9 +83,10 @@ window.onload = function() {
     var gameover = false;
     
     // Gui buttons
-    var buttons = [ { x: 30, y: 240, width: 150, height: 50, text: "New Game"},
-                    { x: 30, y: 300, width: 150, height: 50, text: "Show Moves"},
-                    { x: 30, y: 360, width: 150, height: 50, text: "Enable AI Bot"}];
+    var buttons = [ { x: 30, y: 210, width: 150, height: 50, text: "New Game"},
+                    { x: 30, y: 270, width: 150, height: 50, text: "Show Moves"},
+                    { x: 30, y: 330, width: 150, height: 50, text: "Enable AI Bot"},
+                    { x: 30, y: 430, width: 150, height: 50, text: "Manual Board"}];
     
     // Initialize the game
     function init() {
@@ -283,6 +284,13 @@ window.onload = function() {
         var levelheight = level.rows * level.tileheight;
         context.fillStyle = "#000000";
         context.fillRect(level.x - 4, level.y - 4, levelwidth + 8, levelheight + 8);
+
+        // Draw palette backgroup
+        context.fillRect(level.x - 4, buttons[3].y, levelwidth + 8, level.tileheight + 2);
+        for (i = 0; i < tilecolors.length; i++) {
+            var tileCoord = getTileCoordinate(i, 0, 0, 0)
+            drawTile(tileCoord.tilex, buttons[3].y, tilecolors[i][0], tilecolors[i][1], tilecolors[i][2]);
+        }
         
         // Render tiles
         renderTiles();
@@ -839,6 +847,9 @@ window.onload = function() {
                     // AI Bot
                     aibot = !aibot;
                     buttons[i].text = (aibot?"Disable":"Enable") + " AI Bot";
+                } else if (i == 3) {
+                    // Manual start
+                    showPalette();
                 }
             }
         }
