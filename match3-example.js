@@ -46,13 +46,13 @@ window.onload = function() {
     };
     
     // All of the different tile colors in RGB
-    var tilecolors = [[255, 128, 128],
-                      [128, 255, 128],
-                      [128, 128, 255],
-                      [255, 255, 128],
-                      [255, 128, 255],
-                      [128, 255, 255],
-                      [255, 255, 255]];
+    var tilecolors = [[255, 000, 000], // red
+                      [000, 255, 000], // green
+                      [000, 000, 255], // blue
+                      [255, 255, 000], // yellow
+                      [204, 000, 204], // purple
+                      [096, 096, 096], // brown
+                      [255, 255, 255]]; // white
     
     // Clusters and moves that were found
     var clusters = [];  // { column, row, length, horizontal }
