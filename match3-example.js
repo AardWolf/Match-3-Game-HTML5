@@ -41,7 +41,7 @@ window.onload = function() {
         rows: 8,        // Number of tile rows
         tilewidth: 40,  // Visual width of a tile
         tileheight: 40, // Visual height of a tile
-        tiles: [],      // The two-dimensional tile array
+        tiles: [[]],      // The two-dimensional tile array
         selectedtile: { selected: false, column: 0, row: 0 }
     };
     
@@ -62,8 +62,8 @@ window.onload = function() {
     var currentmove = { column1: 0, row1: 0, column2: 0, row2: 0 };
     
     // Game states
-    var gamestates = { init: 0, ready: 1, resolve: 2 };
-    var gamestate = gamestates.init;
+    var gamestates = { init: 0, ready: 1, resolve: 2, setup: 3 };
+    var gamestate = gamestates.setup;
     
     // Score
     var score = 0;
@@ -96,19 +96,12 @@ window.onload = function() {
         canvas.addEventListener("mouseup", onMouseUp);
         canvas.addEventListener("mouseout", onMouseOut);
         
-        // Initialize the two-dimensional tile array
-        for (var i=0; i<level.columns; i++) {
-            level.tiles[i] = [];
-            for (var j=0; j<level.rows; j++) {
-                // Define a tile type and a shift parameter for animation
-                level.tiles[i][j] = { type: 0, shift:0 }
-            }
-        }
-        
+               
         // New game
-        newGame();
+        // newGame();
         
         // Enter main loop
+        render();
         main(0);
     }
     
@@ -267,6 +260,9 @@ window.onload = function() {
     
     // Render the game
     function render() {
+        if (gamestate == gamestates.setup) {
+            return;
+        }
         // Draw the frame
         drawFrame();
         
@@ -354,10 +350,10 @@ window.onload = function() {
     
     // Render tiles
     function renderTiles() {
-        for (var i=0; i<level.columns; i++) {
-            for (var j=0; j<level.rows; j++) {
+        for (var i=0; i<level.columns && i < level.tiles.length; i++) {
+            for (var j=0; j<level.rows && j < level.tiles[i].length; j++) {
                 // Get the shift of the tile for animation
-                var shift = level.tiles[i][j].shift;
+                var shift = level.tiles[i][j].shift || 0;
                 
                 // Calculate the tile coordinates
                 var coord = getTileCoordinate(i, j, 0, (animationtime / animationtimetotal) * shift);
@@ -368,6 +364,8 @@ window.onload = function() {
                     var col = tilecolors[level.tiles[i][j].type];
                     
                     // Draw the tile using the color
+                    console.log(`Drawing: (${i}, ${j}) - ${JSON.stringify(col)}`);
+
                     drawTile(coord.tilex, coord.tiley, col[0], col[1], col[2]);
                 }
                 
@@ -425,6 +423,7 @@ window.onload = function() {
     function drawTile(x, y, r, g, b) {
         context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
         context.fillRect(x + 2, y + 2, level.tilewidth - 4, level.tileheight - 4);
+        console.log(`Should have drawn ${x}, ${y}`);
     }
     
     // Render clusters
@@ -537,13 +536,13 @@ window.onload = function() {
         clusters = []
         
         // Find horizontal clusters
-        for (var j=0; j<level.rows; j++) {
+        for (var j=0; j<level.rows && j < level.tiles.length; j++) {
             // Start with a single tile, cluster of 1
             var matchlength = 1;
-            for (var i=0; i<level.columns; i++) {
+            for (var i=0; i<level.columns && i < level.tiles[j].length; i++) {
                 var checkcluster = false;
-                
-                if (i == level.columns-1) {
+                console.log(`Checking ${i}, ${j} for ${level.tiles[i][j].type} ${JSON.stringify(level.tiles)}`);
+                if (i == level.columns-1 || i == level.tiles.length-1) {
                     // Last tile
                     checkcluster = true;
                 } else {
@@ -572,13 +571,14 @@ window.onload = function() {
         }
 
         // Find vertical clusters
-        for (var i=0; i<level.columns; i++) {
+        for (var i=0; i<level.columns && i < level.tiles.length; i++) {
             // Start with a single tile, cluster of 1
             var matchlength = 1;
-            for (var j=0; j<level.rows; j++) {
+            for (var j=0; j<level.rows && j < level.tiles[i].length; j++) {
                 var checkcluster = false;
-                
-                if (j == level.rows-1) {
+                console.log(`Checking ${i}, ${j} for ${level.tiles[i][j].type} ${JSON.stringify(level.tiles)}`);
+
+                if (j == level.rows-1 || j == level.tiles.length-1) {
                     // Last tile
                     checkcluster = true;
                 } else {
@@ -717,6 +717,8 @@ window.onload = function() {
         // Calculate the index of the tile
         var tx = Math.floor((pos.x - level.x) / level.tilewidth);
         var ty = Math.floor((pos.y - level.y) / level.tileheight);
+        // console.log(`tiles: ${JSON.stringify(level.tiles)}`);
+        // console.log(`l1: ${level.tiles.length}, l2: ${level.tiles[level.tiles.length-1].length}`);
         
         // Check if the tile is valid
         if (tx >= 0 && tx < level.columns && ty >= 0 && ty < level.rows) {
@@ -726,6 +728,37 @@ window.onload = function() {
                 x: tx,
                 y: ty
             };
+        }
+        // Check if it's in the palette AND we need more tiles
+        else if (pos.y >= buttons[3].y && pos.y < buttons[3].y+buttons[3].height &&
+                tx >= 0 && tx < level.columns - 1 && 
+                level.tiles.length <= 8 && level.tiles[level.tiles.length-1].length <= 8 &&
+                gamestate == gamestates.setup) {
+            // put it in the right place
+            if (level.tiles[level.tiles.length-1].length < 8) {
+                level.tiles[level.tiles.length-1].push({type: tx});
+                if (level.tiles[level.tiles.length-1].length == 8 && level.tiles.length == 8) {
+                    gamestate = gamestates.ready;
+                    findClusters();
+                    console.log('Let\'s go!');
+                }
+                // console.log(`i: ${level.tiles.length}, j: ${level.tiles[level.tiles.length-1].length}`);
+            } else {
+                console.log('Adding new column?');
+                level.tiles.push([{type: tx}]);
+            }
+            // findClusters();
+            var coord = getTileCoordinate(level.tiles.length-1, level.tiles[level.tiles.length-1].length-1, 0, 0);
+            drawTile(coord.tilex, coord.tiley, tilecolors[tx][0], tilecolors[tx][1], tilecolors[tx][2]);
+            // renderTiles();
+            return {
+                valid: false,
+                isPalette: true,
+                type: tx,
+                red: tilecolors[tx][0],
+                green: tilecolors[tx][1],
+                blue: tilecolors[tx][2]
+            }
         }
         
         // No valid tile
